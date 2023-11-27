@@ -57,7 +57,7 @@ class VehicleController(Node):
         self.K = 1.5
 
         # reset the tracker file
-        open("circ_arc_crosstrack_error.csv", "w").close()
+        open("stanley_crosstrack_error.csv", "w").close()
 
 
     def vehicle_pose_callback(self, msg):
@@ -124,6 +124,11 @@ class VehicleController(Node):
                 self.vehicle_point,
                 self.vehicle_heading_rad
             )
+        
+            # Export the cross track error to a file
+            with open("stanley_crosstrack_error.csv", "a") as file:
+                    file.write(str(self.iteration) + "," + str(error_cross_track) + "\n")
+            self.iteration += 1
 
             out_msg = AckermannDriveStamped()
             out_msg.drive.speed = self.speed
