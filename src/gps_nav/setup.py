@@ -37,6 +37,7 @@ setup(
             'goal_pose_visualizer = gps_nav.goal_pose_visualizer:main',
             'arc_controller = gps_nav.circular_arc_controller:main',
             'stanley_controller = gps_nav.stanley_controller:main',
+            'p_and_c_controller = gps_nav.p_and_c_controller:main',
         ],
     },
 )
