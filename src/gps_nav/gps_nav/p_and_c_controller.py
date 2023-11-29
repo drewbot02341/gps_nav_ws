@@ -41,6 +41,7 @@ class VehicleController(Node):
         self.iteration = 0
         self.angle_errors = [0,0]  # List to store past two angleErrors
         self.integral = 0.0 # Integral term for PID controller
+        self.current_steering =0.0
 
         self.vehicle_point = np.array([0.0, 0.0, 0.0])
         self.vehicle_heading_rad = 0.0
@@ -50,6 +51,8 @@ class VehicleController(Node):
 
         self.have_vehicle_pose = False
         self.have_goal_pose = False
+        # reset the tracker file
+        open("p_and_c_crosstrack_error.csv", "w").close()
 
     def vehicle_pose_callback(self, msg):
         self.have_vehicle_pose = True
@@ -103,29 +106,38 @@ class VehicleController(Node):
 
         # This will only publish after each subscription has occured at least once
         if self.have_goal_pose and self.have_vehicle_pose:
-            selfVector = (self.closest_point-self.vehicle_point)/np.linalg.norm(self.closest_point-self.vehicle_point)
-            angleCarrot = math.atan2(selfVector[1],selfVector[0])
+            carrotVector = (self.current_goal_point-self.vehicle_point)/np.linalg.norm(self.current_goal_point-self.vehicle_point)
+            angleCarrot = math.atan2(carrotVector[1],carrotVector[0])
             angleError = angleCarrot - self.vehicle_heading_rad
+
+            #log angleCarrot and angleError to terminal
+            self.get_logger().info("angleCarrot: " + str(angleCarrot))
+            self.get_logger().info("angleError: " + str(angleError))
 
             proportional = 3.0
             derivative = 0.0
-            integral = 0.1
+            integral = 0.0
             self.integral += integral*angleError
 
-            if self.integral > 0.15:
-                self.integral = 0.15
-            elif self.integral < -0.15:
-                self.integral = -0.15
+            if self.integral > 1:
+                self.integral = 1
+            elif self.integral < -1:
+                self.integral = -1
 
-            newAngleVehicle = self.vehicle_heading_rad + proportional*(angleError) + self.integral + derivative*(angleError-2*self.angle_errors[1]+self.angle_errors[0])
+
+            #newAngleVehicle = self.vehicle_heading_rad + proportional*(angleError-self.angle_errors[1]) + self.integral + derivative*(angleError-2*self.angle_errors[1]+self.angle_errors[0])
+            newAngleVehicle = self.current_steering + proportional*(angleError-self.angle_errors[1]) + self.integral + derivative*(angleError-2*self.angle_errors[1]+self.angle_errors[0])
+            
+            self.current_steering = newAngleVehicle
+
+            error = math.sqrt((self.vehicle_point[0] - self.closest_point[0])**2 + (self.vehicle_point[1] - self.closest_point[1])**2)
 
             with open("p_and_c_crosstrack_error.csv", "a") as file:
-                file.write(str(self.iteration) + "," + str(angleError) + "\n")
+                file.write(str(self.iteration) + "," + str(error) + "\n")
             self.iteration += 1
 
             # Store the current angleError
             self.angle_errors.append(angleError)
-
             self.angle_errors.pop(0)
 
             out_msg = AckermannDriveStamped()
