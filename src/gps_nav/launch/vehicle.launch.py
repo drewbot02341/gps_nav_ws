@@ -25,9 +25,15 @@ def generate_launch_description():
         ),
         Node(
             package='gps_nav',
-            executable='vehicle_controller',
-            name='vehicle_controller',
+            executable='stanley_controller',
+            name='stanley_controller',
             output='screen' 
+        ),
+        Node(
+            package='gps_nav',
+            executable='pose',
+            name='pose',
+            output='screen'
         ),
         Node(
             package='gps_nav',
